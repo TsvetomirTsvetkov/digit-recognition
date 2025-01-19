@@ -58,7 +58,8 @@ class DataLoader:
         for i in range(size):
             img = np.array(image_data[i * pixels_per_image:(i + 1) * pixels_per_image])
             img = img.reshape(ROW_SIZE, COL_SIZE)
-            images[i][:] = img
+            # Save normalized data
+            images[i][:] = img / 255.0
 
         return images, labels
 
