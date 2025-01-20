@@ -13,5 +13,5 @@ if __name__ == '__main__':
     # Train the model
     trainer.train()
 
-    # Evaluate he model
+    # Evaluate the model
     trainer.evaluate()
