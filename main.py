@@ -1,16 +1,17 @@
-# Third-party Imports
-import kagglehub
-
 # Project Imports
-from dataloader import DataLoader
+from models.logistic_regression import model as lr_model
+from train import Trainer
+
+# Constants
+LR_FILENAME = 'logistic_regression'
 
 
 if __name__ == '__main__':
-    # Download latest version
-    path = kagglehub.dataset_download("hojjatk/mnist-dataset")
+    # Create trainer
+    trainer = Trainer(model=lr_model, name=LR_FILENAME)
 
-    # Create DataLoader object
-    data = DataLoader(path)
+    # Train the model
+    trainer.train()
 
-    # Load Data
-    (x_train, y_train), (x_test, y_test) = data.load_data()
+    # Evaluate the model
+    trainer.evaluate()
