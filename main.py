@@ -1,40 +1,32 @@
-'''
-# Project Imports
 from models.logistic_regression import model as lr_model
+from models.mlp import MLP
+from models.rnn_model import RNN
 from train import Trainer
 
 # Constants
-LR_FILENAME = 'logistic_regression'
+MODEL_FILENAMES = {
+    'logistic_regression': 'logistic_regression',
+    'mlp': 'mlp',
+    'rnn': 'rnn_data'
+}
 
-
-if __name__ == '__main__':
-    # Create trainer
-    trainer = Trainer(model=lr_model, name=LR_FILENAME)
-
-    # Train the model
+def train_and_evaluate(model, model_name):
+    trainer = Trainer(model=model, name=model_name)
     trainer.train()
-
-    # Evaluate the model
     trainer.evaluate()
 
-'''
+def main():
+    pass
+    # Logistic Regression
+    # train_and_evaluate(lr_model, MODEL_FILENAMES['logistic_regression'])
 
+    # # MLP Model
+    # mlp_model = MLP()
+    # train_and_evaluate(mlp_model, MODEL_FILENAMES['mlp'])
 
-from models.mlp import MLP  # Import the new MLP model
-from train import Trainer
+    # # RNN Model
+    # rnn_model = RNN()
+    # train_and_evaluate(rnn_model, MODEL_FILENAMES['rnn'])
 
-# Constants
-MLP_FILENAME = 'mlp'  # Define a new filename for the MLP model
-
-if __name__ == '__main__':
-    # Instantiate the new MLP model
-    mlp_model = MLP()
-
-    # Create trainer with the new model
-    trainer = Trainer(model=mlp_model, name=MLP_FILENAME)
-
-    # Train the model
-    trainer.train()
-
-    # Evaluate the model
-    trainer.evaluate()
+if __name__ == "__main__":
+    main()
