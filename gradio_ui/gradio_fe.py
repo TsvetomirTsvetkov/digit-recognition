@@ -1,90 +1,163 @@
-
+# System Imports
 import sys
 import os
+
+# External Imports
+import gradio as gr
 import torch
 import torch.nn as nn
-import gradio as gr
-import numpy as np
-import matplotlib.pyplot as plt
-from models.rnn_model import RNN
-from models.mlp import MLP
-from models.logistic_regression import model as LR
-# Assuming models are saved as .pt files
+from torchvision import datasets, transforms
+
+# Project Imports
+from models.rnn_model import model as rnn_model
+from models.mlp import model as mlp_model
+from models.logistic_regression import model as lr_model
 
 # Add the root folder to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Set models to evaluation mode (important for PyTorch)
-rnn_model = RNN()
-mlp_model = MLP()
-lr_model= LR()
-
+# Load the pth files
 rnn_state = torch.load("model_data/rnn_data.pth", map_location=torch.device('cpu'))
 mlp_state = torch.load("model_data/mlp_data.pth", map_location=torch.device('cpu'))
-lr_state = torch.load("model_data/lr_data.pth", map_location=torch.device('cpu'))
+lr_state  = torch.load("model_data/lr_data.pth",  map_location=torch.device('cpu'))
 
 rnn_model.load_state_dict(rnn_state)
-mlp_model.load_state_dict(mlp_model)
-lr_state.load_state_dict(lr_state)
+mlp_model.load_state_dict(mlp_state)
+lr_model.load_state_dict(lr_state)
 
+# Set models to evaluation mode (important for PyTorch)
 rnn_model.eval()
 mlp_model.eval()
 lr_model.eval()
 
-def generate_digit_image(digit: int):
-    # Here you would load or generate an image for the digit
-    # For simplicity, assume we're using a matplotlib plot to display a random image
-    fig, ax = plt.subplots()
-    ax.imshow(np.random.random((28, 28)), cmap='gray')  # Random noise as placeholder
-    ax.set_title(f"Generated Image: {digit}")
-    plt.axis('off')
-    plt.show()
+# Preprcess image for RNN
+def preprocess_image_rnn(image):
+    if isinstance(image, torch.Tensor):
+        image = transforms.ToPILImage()(image)
 
-def preprocess_image(image: np.ndarray):
-    image = image.astype(np.float32) / 255  # Normalize pixel values
-    image = np.expand_dims(image, axis=0)  # Add batch dimension (for models expecting batches)
-    image = np.expand_dims(image, axis=1)  # Add channel dimension (for grayscale images)
-    return torch.tensor(image)
+    transform = transforms.Compose([
+        transforms.Grayscale(num_output_channels=1),  # Ensure single channel (grayscale)
+        transforms.ToTensor(),                        # Convert to tensor [1, H, W]
+        transforms.Normalize(mean=[0.5], std=[0.5])   # Normalize pixel values
+    ])
+    image_tensor = transform(image)  # Shape: [1, 28, 28]
 
+    # Flatten the image for RNN
+    image_tensor = image_tensor.view(1, -1)  # Shape: [1, 784]
+
+    return image_tensor
+
+# Predict image with RNN
 def predict_with_rnn(image):
-    image = preprocess_image(image)
+    image = preprocess_image_rnn(image)
+    image = image.to(torch.float32)
+
     with torch.no_grad():
         output = rnn_model(image)
         prediction = output.argmax(dim=1).item()
+
     return prediction
 
+# Preprcess image for MLP
+def preprocess_image_mlp(image):
+    if isinstance(image, torch.Tensor):
+        image = transforms.ToPILImage()(image)
+
+    transform = transforms.Compose([
+        transforms.Grayscale(num_output_channels=1),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5], std=[0.5]),
+    ])
+    image_tensor = transform(image)
+    image_tensor = image_tensor.view(-1, 28 * 28)
+
+    return image_tensor
+
+# Predict image with MLP
 def predict_with_mlp(image):
-    image = preprocess_image(image)
+    image = preprocess_image_mlp(image)
     with torch.no_grad():
         output = mlp_model(image)
         prediction = output.argmax(dim=1).item()
     return prediction
 
+# Preprcess image for LR
+def preprocess_image_lr(image):
+    if isinstance(image, torch.Tensor):
+        image = transforms.ToPILImage()(image)
+
+    transform = transforms.Compose([
+        transforms.Grayscale(num_output_channels=1),  # Ensure single channel
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5], std=[0.5])  # Normalize to match training
+    ])
+    image_tensor = transform(image)  # Shape: [1, 28, 28]
+
+    # Flatten the image
+    image_tensor = image_tensor.view(-1)  # Shape: [784]
+
+    return image_tensor
+
+# Predict image with LR
 def predict_with_lr(image):
-    # Assuming the Logistic Regression model is trained with flattened images
     image = image.flatten().reshape(1, -1)  # Flatten the image
-    prediction = lr_model.predict(image)
-    return prediction[0]
+    prediction = lr_model(image)
+    _, predicted_classes = torch.max(prediction, dim=1)
+    return predicted_classes[0]
 
 
-def generate_and_predict(digit: int):
-    # Generate a random image for the digit
-    generate_digit_image(digit)
+def load_mnist_dataset():
+    transform = transforms.Compose([transforms.ToTensor()])
+    dataset = datasets.MNIST(root="./data", train=False, download=True, transform=transform)
+    return dataset
 
-    # Simulate a random image for prediction (this should be replaced with actual image generation logic)
-    random_image = np.random.random((28, 28))  # Replace with your actual image generation logic
+def get_random_mnist_image(index):
+    dataset = load_mnist_dataset()
     
-    # Get predictions from the models
-    rnn_pred = predict_with_rnn(random_image)
-    mlp_pred = predict_with_mlp(random_image)
-    lr_pred = predict_with_lr(random_image)
+    img, label = dataset[index]
+    img = transforms.ToPILImage()(img)
+
+    return img, label
+
+
+def predict_image(index, model_choice):
+    img, true_label = get_random_mnist_image(index)
+
+    prediction = None
+    print('DEBUGGGG')
+    img_tensor = preprocess_image_rnn(img)
+    print(f"Preprocessed RNN image shape: {img_tensor.shape}")
+    print('DEBUGGGG')
+    try:
+        print(model_choice)
+        if model_choice == "RNN":
+            img_tensor = preprocess_image_rnn(img)
+            prediction = predict_with_rnn(img_tensor)
+        elif model_choice == "MLP":
+            img_tensor = preprocess_image_mlp(img).unsqueeze(0)
+            prediction = predict_with_mlp(img_tensor)
+        elif model_choice == "Logistic Regression":
+            img_tensor = preprocess_image_lr(img).unsqueeze(0)
+            prediction = predict_with_lr(img_tensor)
+        else:
+            prediction = "Invalid model choice."
+    except Exception as e:
+        prediction = f"Error during prediction: {str(e)}"
     
-    return f"RNN Prediction: {rnn_pred}\nMLP Prediction: {mlp_pred}\nLogistic Regression Prediction: {lr_pred}"
+    return img, f"Prediction: {prediction}, Actual: {true_label}"
 
-# Create the Gradio interface
-interface = gr.Interface(fn=generate_and_predict, 
-                         inputs=gr.inputs.Slider(minimum=0, maximum=9, step=1, default=0, label="Input Digit (0-9)"), 
-                         outputs=gr.outputs.Textbox(label="Predictions"),
-                         live=True)
 
-interface.launch()
+def create_interface():
+    gr.Interface(
+        fn=predict_image,
+        inputs=[
+            gr.Slider(minimum=0, maximum=1000, step=1, label="Select Random Index (0-1000)"),
+            gr.Radio(choices=["RNN", "MLP", "Logistic Regression"], label="Choose Model")
+        ],
+        outputs=[
+            gr.Image(label="Random MNIST Image"),
+            gr.Textbox(label="Prediction vs Actual")
+        ],
+        title="MNIST Random Image Prediction",
+        description="Select a random number (0-1000) and choose a model to predict the digit."
+    ).launch()

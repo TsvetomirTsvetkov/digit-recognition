@@ -17,4 +17,5 @@ class RNN(nn.Module):
         x = self.fc(x[:, -1, :])
         return x
 
-    
+# Instantiate the model
+model = RNN()

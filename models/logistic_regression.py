@@ -2,7 +2,7 @@
 import torch.nn as nn
 
 # Constants
-INPUT_SIZE = 784
+INPUT_SIZE = 784 
 NUM_CLASSES = 10
 
 
