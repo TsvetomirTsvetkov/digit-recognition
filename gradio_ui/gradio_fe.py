@@ -36,14 +36,14 @@ def preprocess_image_rnn(image):
         image = transforms.ToPILImage()(image)
 
     transform = transforms.Compose([
-        transforms.Grayscale(num_output_channels=1),  # Ensure single channel (grayscale)
-        transforms.ToTensor(),                        # Convert to tensor [1, H, W]
-        transforms.Normalize(mean=[0.5], std=[0.5])   # Normalize pixel values
+        transforms.Grayscale(num_output_channels=1),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5], std=[0.5])
     ])
-    image_tensor = transform(image)  # Shape: [1, 28, 28]
+    image_tensor = transform(image)
 
     # Flatten the image for RNN
-    image_tensor = image_tensor.view(1, -1)  # Shape: [1, 784]
+    image_tensor = image_tensor.view(1, -1)
 
     return image_tensor
 
@@ -87,20 +87,21 @@ def preprocess_image_lr(image):
         image = transforms.ToPILImage()(image)
 
     transform = transforms.Compose([
-        transforms.Grayscale(num_output_channels=1),  # Ensure single channel
+        transforms.Grayscale(num_output_channels=1),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5], std=[0.5])  # Normalize to match training
+        transforms.Normalize(mean=[0.5], std=[0.5])
     ])
-    image_tensor = transform(image)  # Shape: [1, 28, 28]
+    image_tensor = transform(image)
 
     # Flatten the image
-    image_tensor = image_tensor.view(-1)  # Shape: [784]
+    image_tensor = image_tensor.view(-1)
 
     return image_tensor
 
 # Predict image with LR
 def predict_with_lr(image):
-    image = image.flatten().reshape(1, -1)  # Flatten the image
+    # Flatten the image
+    image = image.flatten().reshape(1, -1)
     prediction = lr_model(image)
     _, predicted_classes = torch.max(prediction, dim=1)
     return predicted_classes[0]
@@ -124,10 +125,7 @@ def predict_image(index, model_choice):
     img, true_label = get_random_mnist_image(index)
 
     prediction = None
-    print('DEBUGGGG')
-    img_tensor = preprocess_image_rnn(img)
-    print(f"Preprocessed RNN image shape: {img_tensor.shape}")
-    print('DEBUGGGG')
+
     try:
         print(model_choice)
         if model_choice == "RNN":
