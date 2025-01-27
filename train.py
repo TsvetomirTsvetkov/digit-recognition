@@ -85,7 +85,7 @@ class Trainer():
                 if (batch_idx + 1) % 100 == 0:
                     print(f'Epoch [{epoch+1}/{self.epochs}], Step [{batch_idx+1}/{len(self.train_loader)}], Loss: {loss.item():.4f}')
 
-        model_file = f'models/{self.name}.pth'
+        model_file = f'model_data/{self.name}.pth'
 
         print(f"Model will be saved in {model_file}")
         torch.save(self.model.state_dict(), model_file)
